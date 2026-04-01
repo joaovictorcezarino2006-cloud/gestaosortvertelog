@@ -501,11 +501,11 @@
                 <div id="loginAlert" class="alert"></div>
                 <div class="form-group">
                     <label><i class="fas fa-user"></i> Usuário</label>
-                    <input type="text" id="loginUsername" placeholder="Digite seu usuário">
+                    <input type="text" id="loginUsername" placeholder="Digite seu usuário" value="joao">
                 </div>
                 <div class="form-group">
                     <label><i class="fas fa-lock"></i> Senha</label>
-                    <input type="password" id="loginPassword" placeholder="••••••••">
+                    <input type="password" id="loginPassword" placeholder="••••••••" value="joao123">
                 </div>
                 <button class="btn-primary" style="width: 100%;" onclick="login()">Entrar</button>
                 <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 12px; text-align: center;">
@@ -756,146 +756,12 @@
         let currentUser = null;
         let cartItems = [];
 
-        // Criar tabelas e dados iniciais
-        async function initializeDatabase() {
-            console.log('🔄 Inicializando banco de dados...');
-            
-            try {
-                // Criar tabela de usuários
-                const { error: createUsersError } = await supabase.rpc('exec_sql', {
-                    sql: `
-                        CREATE TABLE IF NOT EXISTS users (
-                            id SERIAL PRIMARY KEY,
-                            username TEXT UNIQUE NOT NULL,
-                            password TEXT NOT NULL,
-                            nome TEXT NOT NULL,
-                            telefone TEXT,
-                            role TEXT DEFAULT 'funcionario',
-                            created_at TIMESTAMP DEFAULT NOW()
-                        );
-                    `
-                });
-                
-                if (createUsersError) console.log('Tabela users pode já existir');
-                
-                // Inserir admin se não existir
-                const { data: adminExists } = await supabase
-                    .from('users')
-                    .select('id')
-                    .eq('username', 'joao')
-                    .single();
-                
-                if (!adminExists) {
-                    await supabase
-                        .from('users')
-                        .insert([{
-                            username: 'joao',
-                            password: 'joao123',
-                            nome: 'João Victor Cezarino',
-                            telefone: '(11) 99999-1111',
-                            role: 'admin'
-                        }]);
-                    console.log('✅ Admin criado');
-                }
-                
-                // Inserir funcionário de teste se não existir
-                const { data: funcExists } = await supabase
-                    .from('users')
-                    .select('id')
-                    .eq('username', 'funcionario')
-                    .single();
-                
-                if (!funcExists) {
-                    await supabase
-                        .from('users')
-                        .insert([{
-                            username: 'funcionario',
-                            password: '123456',
-                            nome: 'Funcionário Teste',
-                            telefone: '(11) 99999-2222',
-                            role: 'funcionario'
-                        }]);
-                    console.log('✅ Funcionário teste criado');
-                }
-                
-                // Criar tabela de sabores
-                await supabase.rpc('exec_sql', {
-                    sql: `
-                        CREATE TABLE IF NOT EXISTS sabores (
-                            id SERIAL PRIMARY KEY,
-                            nome TEXT NOT NULL,
-                            preco DECIMAL(10,2) NOT NULL,
-                            quantidade INTEGER NOT NULL,
-                            imagem TEXT,
-                            created_at TIMESTAMP DEFAULT NOW()
-                        );
-                    `
-                });
-                
-                // Inserir sabores de exemplo se não houver nenhum
-                const { count: saboresCount } = await supabase
-                    .from('sabores')
-                    .select('*', { count: 'exact', head: true });
-                
-                if (saboresCount === 0) {
-                    const saboresExemplo = [
-                        { nome: 'Chocolate Belga', preco: 12.90, quantidade: 50, imagem: 'https://via.placeholder.com/50?text=Chocolate' },
-                        { nome: 'Morango com Leite', preco: 10.90, quantidade: 40, imagem: 'https://via.placeholder.com/50?text=Morango' },
-                        { nome: 'Creme', preco: 9.90, quantidade: 60, imagem: 'https://via.placeholder.com/50?text=Creme' },
-                        { nome: 'Flocos', preco: 11.90, quantidade: 35, imagem: 'https://via.placeholder.com/50?text=Flocos' },
-                        { nome: 'Pistache', preco: 14.90, quantidade: 25, imagem: 'https://via.placeholder.com/50?text=Pistache' }
-                    ];
-                    
-                    for (const sabor of saboresExemplo) {
-                        await supabase.from('sabores').insert([sabor]);
-                    }
-                    console.log('✅ Sabores de exemplo criados');
-                }
-                
-                // Criar tabela de reservas
-                await supabase.rpc('exec_sql', {
-                    sql: `
-                        CREATE TABLE IF NOT EXISTS reservas (
-                            id SERIAL PRIMARY KEY,
-                            user_id INTEGER,
-                            user_name TEXT,
-                            data DATE NOT NULL,
-                            horario TIME NOT NULL,
-                            pessoas INTEGER NOT NULL,
-                            status TEXT DEFAULT 'pendente',
-                            created_at TIMESTAMP DEFAULT NOW()
-                        );
-                    `
-                });
-                
-                // Criar tabela de vendas
-                await supabase.rpc('exec_sql', {
-                    sql: `
-                        CREATE TABLE IF NOT EXISTS vendas (
-                            id SERIAL PRIMARY KEY,
-                            user_id INTEGER,
-                            user_name TEXT,
-                            produtos JSONB,
-                            total DECIMAL(10,2),
-                            status TEXT DEFAULT 'finalizado',
-                            created_at TIMESTAMP DEFAULT NOW()
-                        );
-                    `
-                });
-                
-                console.log('✅ Banco de dados inicializado com sucesso!');
-                
-            } catch (error) {
-                console.error('Erro ao inicializar:', error);
-            }
-        }
-
-        // Função de Login
+        // Função de Login SIMPLIFICADA
         async function login() {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
             
-            console.log('Tentando login com:', username);
+            console.log('🔐 Tentando login com:', username);
             
             if (!username || !password) {
                 showAlert('loginAlert', 'Preencha todos os campos!', 'error');
@@ -908,42 +774,43 @@
             loginBtn.disabled = true;
             
             try {
-                // Buscar usuário no banco
-                const { data: users, error } = await supabase
+                // Tentar buscar o usuário no banco
+                const { data, error } = await supabase
                     .from('users')
                     .select('*')
                     .eq('username', username.toLowerCase())
                     .eq('password', password);
                 
+                console.log('📊 Resposta do Supabase:', { data, error });
+                
                 if (error) {
-                    console.error('Erro na busca:', error);
-                    showAlert('loginAlert', 'Erro ao conectar com o banco de dados!', 'error');
+                    console.error('❌ Erro na consulta:', error);
+                    showAlert('loginAlert', 'Erro ao conectar com o banco de dados. Verifique se as tabelas foram criadas.', 'error');
                     loginBtn.innerHTML = originalText;
                     loginBtn.disabled = false;
                     return;
                 }
                 
-                console.log('Usuários encontrados:', users);
-                
-                if (!users || users.length === 0) {
+                if (!data || data.length === 0) {
+                    console.log('❌ Usuário não encontrado');
                     showAlert('loginAlert', 'Usuário ou senha inválidos!', 'error');
                     loginBtn.innerHTML = originalText;
                     loginBtn.disabled = false;
                     return;
                 }
                 
-                const user = users[0];
+                const user = data[0];
                 currentUser = user;
                 
-                console.log('Login bem sucedido:', user.nome);
+                console.log('✅ Login bem sucedido!', user.nome);
                 
-                // Mostrar dashboard
+                // Esconder tela de login e mostrar app
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('appContainer').style.display = 'block';
                 document.getElementById('userName').textContent = user.nome;
                 document.getElementById('userRoleBadge').innerHTML = `<span class="badge badge-success">${user.role === 'admin' ? 'Administrador' : 'Funcionário'}</span>`;
                 
-                // Mostrar botão de criar funcionário apenas para admin
+                // Configurar permissões
                 const createBtn = document.getElementById('createUserBtn');
                 if (user.role === 'admin') {
                     createBtn.style.display = 'inline-block';
@@ -951,7 +818,6 @@
                     createBtn.style.display = 'none';
                 }
                 
-                // Esconder formulário de cadastro de sabores para não-admin
                 const saborForm = document.getElementById('saborFormCard');
                 if (user.role !== 'admin' && saborForm) {
                     saborForm.style.display = 'none';
@@ -965,7 +831,7 @@
                 await loadSaboresSelect();
                 
             } catch (error) {
-                console.error('Erro no login:', error);
+                console.error('❌ Erro no login:', error);
                 showAlert('loginAlert', 'Erro ao fazer login: ' + error.message, 'error');
             } finally {
                 loginBtn.innerHTML = originalText;
@@ -973,95 +839,41 @@
             }
         }
         
-        // Criar novo usuário
-        async function createUser() {
-            if (currentUser?.role !== 'admin') {
-                alert('Apenas administradores podem criar novos usuários!');
-                return;
-            }
+        // Função para verificar e criar tabelas
+        async function checkAndCreateTables() {
+            console.log('🔧 Verificando tabelas...');
             
-            const nome = document.getElementById('createUserName').value.trim();
-            const username = document.getElementById('createUserUsername').value.trim().toLowerCase();
-            const telefone = document.getElementById('createUserPhone').value;
-            const password = document.getElementById('createUserPassword').value;
-            
-            if (!nome || !username || !password) {
-                showAlert('createUserAlert', 'Preencha todos os campos obrigatórios!', 'error');
-                return;
-            }
-            
-            if (password.length < 4) {
-                showAlert('createUserAlert', 'A senha deve ter no mínimo 4 caracteres!', 'error');
-                return;
-            }
-            
-            const createBtn = event.target;
-            const originalText = createBtn.innerHTML;
-            createBtn.innerHTML = '<span class="loading"></span> Criando...';
-            createBtn.disabled = true;
-            
+            // Primeiro, tentar criar as tabelas manualmente via SQL
             try {
-                // Verificar se usuário já existe
-                const { data: existing } = await supabase
+                // Tabela users
+                const { error: createUsersError } = await supabase
                     .from('users')
-                    .select('username')
-                    .eq('username', username)
-                    .single();
+                    .select('count');
                 
-                if (existing) {
-                    showAlert('createUserAlert', 'Este usuário já existe!', 'error');
-                    createBtn.innerHTML = originalText;
-                    createBtn.disabled = false;
-                    return;
+                if (createUsersError && createUsersError.code === '42P01') {
+                    console.log('Tabela users não existe, tentando criar...');
+                    // Não podemos criar tabelas via API, então vamos alertar
+                    alert('As tabelas do banco de dados não foram criadas. Por favor, execute o SQL no Supabase.\n\nAcesse: https://supabase.com/dashboard/project/pgatmatoyhntkvvfwnus/sql');
                 }
                 
-                // Criar novo usuário
-                const { error: insertError } = await supabase
-                    .from('users')
-                    .insert([{
-                        username: username,
-                        password: password,
-                        nome: nome,
-                        telefone: telefone || '',
-                        role: 'funcionario'
-                    }]);
-                
-                if (insertError) throw insertError;
-                
-                showAlert('createUserAlert', 'Funcionário criado com sucesso!', 'success');
-                
-                // Limpar campos
-                document.getElementById('createUserName').value = '';
-                document.getElementById('createUserUsername').value = '';
-                document.getElementById('createUserPhone').value = '';
-                document.getElementById('createUserPassword').value = '';
-                
-                setTimeout(() => {
-                    closeCreateUserModal();
-                    loadFuncionarios();
-                    loadDashboard();
-                }, 1500);
-                
             } catch (error) {
-                console.error('Erro ao criar usuário:', error);
-                showAlert('createUserAlert', 'Erro ao criar funcionário!', 'error');
-            } finally {
-                createBtn.innerHTML = originalText;
-                createBtn.disabled = false;
+                console.error('Erro ao verificar tabelas:', error);
             }
         }
         
-        // Dashboard
+        // Carregar dados do dashboard
         async function loadDashboard() {
             try {
                 const { count: saboresCount } = await supabase
                     .from('sabores')
-                    .select('*', { count: 'exact', head: true });
+                    .select('*', { count: 'exact', head: true })
+                    .catch(() => ({ count: 0 }));
                 
                 const { count: funcionariosCount } = await supabase
                     .from('users')
                     .select('*', { count: 'exact', head: true })
-                    .eq('role', 'funcionario');
+                    .eq('role', 'funcionario')
+                    .catch(() => ({ count: 0 }));
                 
                 document.getElementById('totalSabores').textContent = saboresCount || 0;
                 document.getElementById('totalFuncionarios').textContent = funcionariosCount || 0;
@@ -1070,13 +882,15 @@
                 const { count: reservasHoje } = await supabase
                     .from('reservas')
                     .select('*', { count: 'exact', head: true })
-                    .eq('data', hoje);
+                    .eq('data', hoje)
+                    .catch(() => ({ count: 0 }));
                 
                 document.getElementById('reservasHoje').textContent = reservasHoje || 0;
                 
                 const { data: vendas } = await supabase
                     .from('vendas')
-                    .select('total');
+                    .select('total')
+                    .catch(() => ({ data: [] }));
                 
                 const totalVendas = vendas?.reduce((sum, item) => sum + parseFloat(item.total), 0) || 0;
                 document.getElementById('vendasMes').textContent = `R$ ${totalVendas.toFixed(2)}`;
@@ -1085,7 +899,7 @@
             }
         }
         
-        // Sabores
+        // Carregar sabores
         async function loadSabores() {
             try {
                 const { data, error } = await supabase
@@ -1120,6 +934,7 @@
             }
         }
         
+        // Adicionar sabor
         async function addSabor() {
             if (currentUser?.role !== 'admin') {
                 alert('Apenas administradores podem adicionar sabores!');
@@ -1160,6 +975,7 @@
             loadSaboresSelect();
         }
         
+        // Deletar sabor
         async function deleteSabor(id) {
             if (currentUser?.role !== 'admin') {
                 alert('Apenas administradores podem excluir sabores!');
@@ -1181,6 +997,68 @@
                 loadSabores();
                 loadDashboard();
                 loadSaboresSelect();
+            }
+        }
+        
+        // Criar usuário
+        async function createUser() {
+            if (currentUser?.role !== 'admin') {
+                alert('Apenas administradores podem criar novos usuários!');
+                return;
+            }
+            
+            const nome = document.getElementById('createUserName').value.trim();
+            const username = document.getElementById('createUserUsername').value.trim().toLowerCase();
+            const telefone = document.getElementById('createUserPhone').value;
+            const password = document.getElementById('createUserPassword').value;
+            
+            if (!nome || !username || !password) {
+                showAlert('createUserAlert', 'Preencha todos os campos obrigatórios!', 'error');
+                return;
+            }
+            
+            if (password.length < 4) {
+                showAlert('createUserAlert', 'A senha deve ter no mínimo 4 caracteres!', 'error');
+                return;
+            }
+            
+            const createBtn = event.target;
+            const originalText = createBtn.innerHTML;
+            createBtn.innerHTML = '<span class="loading"></span> Criando...';
+            createBtn.disabled = true;
+            
+            try {
+                const { error: insertError } = await supabase
+                    .from('users')
+                    .insert([{
+                        username: username,
+                        password: password,
+                        nome: nome,
+                        telefone: telefone || '',
+                        role: 'funcionario'
+                    }]);
+                
+                if (insertError) throw insertError;
+                
+                showAlert('createUserAlert', 'Funcionário criado com sucesso!', 'success');
+                
+                document.getElementById('createUserName').value = '';
+                document.getElementById('createUserUsername').value = '';
+                document.getElementById('createUserPhone').value = '';
+                document.getElementById('createUserPassword').value = '';
+                
+                setTimeout(() => {
+                    closeCreateUserModal();
+                    loadFuncionarios();
+                    loadDashboard();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Erro ao criar usuário:', error);
+                showAlert('createUserAlert', 'Erro ao criar funcionário!', 'error');
+            } finally {
+                createBtn.innerHTML = originalText;
+                createBtn.disabled = false;
             }
         }
         
@@ -1235,18 +1113,18 @@
                 tbody.innerHTML = '';
                 
                 if (!data || data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Nenhuma reserva encontrada</td></tr>';
+                    tbody.innerHTML = '十大<td colspan="5" style="text-align: center;">Nenhuma reserva encontrada</td>;</tr>';
                     return;
                 }
                 
                 data.forEach(reserva => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${reserva.id}</td>
-                        <td>${new Date(reserva.data).toLocaleDateString('pt-BR')}</td>
-                        <td>${reserva.horario}</td>
-                        <td>${reserva.pessoas}</td>
-                        <td><span class="badge ${reserva.status === 'confirmada' ? 'badge-success' : 'badge-warning'}">${reserva.status}</span></td>
+                         <td>${reserva.id}</td>
+                         <td>${new Date(reserva.data).toLocaleDateString('pt-BR')}</td>
+                         <td>${reserva.horario}</td>
+                         <td>${reserva.pessoas}</td>
+                         <td><span class="badge ${reserva.status === 'confirmada' ? 'badge-success' : 'badge-warning'}">${reserva.status}</span></td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -1277,19 +1155,19 @@
                 tbody.innerHTML = '';
                 
                 if (!data || data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Nenhum funcionário cadastrado</td></tr>';
+                    tbody.innerHTML = '十大<td colspan="6" style="text-align: center;">Nenhum funcionário cadastrado</td></tr>';
                     return;
                 }
                 
                 data.forEach(user => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${user.id}</td>
-                        <td><strong>${user.nome}</strong></td>
-                        <td>${user.username}</td>
-                        <td>${user.telefone || 'N/A'}</td>
-                        <td>${new Date(user.created_at).toLocaleDateString('pt-BR')}</td>
-                        <td><span class="badge ${user.role === 'admin' ? 'badge-success' : 'badge-info'}">${user.role === 'admin' ? 'Admin' : 'Funcionário'}</span></td>
+                         <td>${user.id}</td>
+                         <td><strong>${user.nome}</strong></td>
+                         <td>${user.username}</td>
+                         <td>${user.telefone || 'N/A'}</td>
+                         <td>${new Date(user.created_at).toLocaleDateString('pt-BR')}</td>
+                         <td><span class="badge ${user.role === 'admin' ? 'badge-success' : 'badge-info'}">${user.role === 'admin' ? 'Admin' : 'Funcionário'}</span></td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -1361,12 +1239,12 @@
                 total += item.subtotal;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${item.nome}</td>
-                    <td>${item.quantidade}</td>
-                    <td>R$ ${item.preco.toFixed(2)}</td>
-                    <td>R$ ${item.subtotal.toFixed(2)}</td>
-                    <td><button class="btn-danger" onclick="removeFromCart(${index})"><i class="fas fa-trash"></i></button></td>
+                     <td>${index + 1}</td>
+                     <td>${item.nome}</td>
+                     <td>${item.quantidade}</td>
+                     <td>R$ ${item.preco.toFixed(2)}</td>
+                     <td>R$ ${item.subtotal.toFixed(2)}</td>
+                     <td><button class="btn-danger" onclick="removeFromCart(${index})"><i class="fas fa-trash"></i></button></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -1385,7 +1263,6 @@
                 return;
             }
             
-            // Atualizar estoque
             for (const item of cartItems) {
                 const { data: sabor } = await supabase
                     .from('sabores')
@@ -1476,16 +1353,47 @@
             cartItems = [];
             document.getElementById('appContainer').style.display = 'none';
             document.getElementById('loginScreen').style.display = 'flex';
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
+            document.getElementById('loginUsername').value = 'joao';
+            document.getElementById('loginPassword').value = 'joao123';
         }
         
         // Inicialização
         async function init() {
-            console.log('🚀 Inicializando sistema Gelato...');
-            await initializeDatabase();
-            console.log('✅ Sistema pronto!');
-            console.log('👤 Login: joao | Senha: joao123');
+            console.log('🚀 Sistema Gelato iniciado!');
+            console.log('📝 Para fazer login, use:');
+            console.log('   Usuário: joao');
+            console.log('   Senha: joao123');
+            
+            // Verificar se o usuário já está logado
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                try {
+                    const user = JSON.parse(savedUser);
+                    currentUser = user;
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('appContainer').style.display = 'block';
+                    document.getElementById('userName').textContent = user.nome;
+                    document.getElementById('userRoleBadge').innerHTML = `<span class="badge badge-success">${user.role === 'admin' ? 'Administrador' : 'Funcionário'}</span>`;
+                    
+                    const createBtn = document.getElementById('createUserBtn');
+                    if (user.role === 'admin') {
+                        createBtn.style.display = 'inline-block';
+                    }
+                    
+                    const saborForm = document.getElementById('saborFormCard');
+                    if (user.role !== 'admin' && saborForm) {
+                        saborForm.style.display = 'none';
+                    }
+                    
+                    await loadDashboard();
+                    await loadSabores();
+                    await loadReservas();
+                    await loadFuncionarios();
+                    await loadSaboresSelect();
+                } catch (e) {
+                    console.error('Erro ao restaurar sessão:', e);
+                }
+            }
         }
         
         // Aguardar página carregar
