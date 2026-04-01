@@ -507,7 +507,7 @@
                     <label><i class="fas fa-lock"></i> Senha</label>
                     <input type="password" id="loginPassword" placeholder="••••••••" value="joao123">
                 </div>
-                <button class="btn-primary" style="width: 100%;" onclick="login()">Entrar</button>
+                <button class="btn-primary" style="width: 100%;" id="loginButton">Entrar</button>
                 <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 12px; text-align: center;">
                     <p style="font-size: 12px; color: #666;">🔐 Credenciais de teste:</p>
                     <p style="font-size: 12px; color: #333; margin-top: 5px;"><strong>Admin:</strong> joao / joao123</p>
@@ -541,7 +541,7 @@
                 <label>Senha</label>
                 <input type="password" id="createUserPassword" placeholder="••••••••">
             </div>
-            <button class="btn-primary" style="width: 100%;" onclick="createUser()">Criar Funcionário</button>
+            <button class="btn-primary" style="width: 100%;" id="createUserBtn">Criar Funcionário</button>
         </div>
     </div>
 
@@ -584,7 +584,7 @@
             <div class="dashboard-header">
                 <h1>Bem-vindo, <span id="userName">Usuário</span>!</h1>
                 <p id="userRoleBadge"></p>
-                <button id="createUserBtn" class="btn-secondary" style="margin-top: 15px; display: none;" onclick="openCreateUserModal()">
+                <button id="createUserBtnAdmin" class="btn-secondary" style="margin-top: 15px; display: none;" onclick="openCreateUserModal()">
                     <i class="fas fa-user-plus"></i> Criar Novo Funcionário
                 </button>
             </div>
@@ -756,8 +756,8 @@
         let currentUser = null;
         let cartItems = [];
 
-        // Função de Login SIMPLIFICADA
-        async function login() {
+        // Função de Login
+        window.login = async function() {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
             
@@ -768,31 +768,30 @@
                 return;
             }
             
-            const loginBtn = event.target;
+            const loginBtn = document.getElementById('loginButton');
             const originalText = loginBtn.innerHTML;
             loginBtn.innerHTML = '<span class="loading"></span> Entrando...';
             loginBtn.disabled = true;
             
             try {
-                // Tentar buscar o usuário no banco
+                // Buscar usuário no Supabase
                 const { data, error } = await supabase
                     .from('users')
                     .select('*')
                     .eq('username', username.toLowerCase())
                     .eq('password', password);
                 
-                console.log('📊 Resposta do Supabase:', { data, error });
+                console.log('📊 Resposta:', { data, error });
                 
                 if (error) {
-                    console.error('❌ Erro na consulta:', error);
-                    showAlert('loginAlert', 'Erro ao conectar com o banco de dados. Verifique se as tabelas foram criadas.', 'error');
+                    console.error('❌ Erro:', error);
+                    showAlert('loginAlert', 'Erro ao conectar com o banco de dados. Verifique se as tabelas foram criadas no Supabase.', 'error');
                     loginBtn.innerHTML = originalText;
                     loginBtn.disabled = false;
                     return;
                 }
                 
                 if (!data || data.length === 0) {
-                    console.log('❌ Usuário não encontrado');
                     showAlert('loginAlert', 'Usuário ou senha inválidos!', 'error');
                     loginBtn.innerHTML = originalText;
                     loginBtn.disabled = false;
@@ -802,16 +801,19 @@
                 const user = data[0];
                 currentUser = user;
                 
+                // Salvar no localStorage
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                
                 console.log('✅ Login bem sucedido!', user.nome);
                 
-                // Esconder tela de login e mostrar app
+                // Esconder login e mostrar app
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('appContainer').style.display = 'block';
                 document.getElementById('userName').textContent = user.nome;
                 document.getElementById('userRoleBadge').innerHTML = `<span class="badge badge-success">${user.role === 'admin' ? 'Administrador' : 'Funcionário'}</span>`;
                 
                 // Configurar permissões
-                const createBtn = document.getElementById('createUserBtn');
+                const createBtn = document.getElementById('createUserBtnAdmin');
                 if (user.role === 'admin') {
                     createBtn.style.display = 'inline-block';
                 } else {
@@ -837,171 +839,10 @@
                 loginBtn.innerHTML = originalText;
                 loginBtn.disabled = false;
             }
-        }
-        
-        // Função para verificar e criar tabelas
-        async function checkAndCreateTables() {
-            console.log('🔧 Verificando tabelas...');
-            
-            // Primeiro, tentar criar as tabelas manualmente via SQL
-            try {
-                // Tabela users
-                const { error: createUsersError } = await supabase
-                    .from('users')
-                    .select('count');
-                
-                if (createUsersError && createUsersError.code === '42P01') {
-                    console.log('Tabela users não existe, tentando criar...');
-                    // Não podemos criar tabelas via API, então vamos alertar
-                    alert('As tabelas do banco de dados não foram criadas. Por favor, execute o SQL no Supabase.\n\nAcesse: https://supabase.com/dashboard/project/pgatmatoyhntkvvfwnus/sql');
-                }
-                
-            } catch (error) {
-                console.error('Erro ao verificar tabelas:', error);
-            }
-        }
-        
-        // Carregar dados do dashboard
-        async function loadDashboard() {
-            try {
-                const { count: saboresCount } = await supabase
-                    .from('sabores')
-                    .select('*', { count: 'exact', head: true })
-                    .catch(() => ({ count: 0 }));
-                
-                const { count: funcionariosCount } = await supabase
-                    .from('users')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('role', 'funcionario')
-                    .catch(() => ({ count: 0 }));
-                
-                document.getElementById('totalSabores').textContent = saboresCount || 0;
-                document.getElementById('totalFuncionarios').textContent = funcionariosCount || 0;
-                
-                const hoje = new Date().toISOString().split('T')[0];
-                const { count: reservasHoje } = await supabase
-                    .from('reservas')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('data', hoje)
-                    .catch(() => ({ count: 0 }));
-                
-                document.getElementById('reservasHoje').textContent = reservasHoje || 0;
-                
-                const { data: vendas } = await supabase
-                    .from('vendas')
-                    .select('total')
-                    .catch(() => ({ data: [] }));
-                
-                const totalVendas = vendas?.reduce((sum, item) => sum + parseFloat(item.total), 0) || 0;
-                document.getElementById('vendasMes').textContent = `R$ ${totalVendas.toFixed(2)}`;
-            } catch (error) {
-                console.error('Erro ao carregar dashboard:', error);
-            }
-        }
-        
-        // Carregar sabores
-        async function loadSabores() {
-            try {
-                const { data, error } = await supabase
-                    .from('sabores')
-                    .select('*')
-                    .order('id', { ascending: true });
-                
-                if (error) throw error;
-                
-                const tbody = document.getElementById('tabelaSabores');
-                tbody.innerHTML = '';
-                
-                if (!data || data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Nenhum sabor cadastrado</td></tr>';
-                    return;
-                }
-                
-                data.forEach(sabor => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${sabor.id}</td>
-                        <td><img src="${sabor.imagem || 'https://via.placeholder.com/50'}" class="product-img" onerror="this.src='https://via.placeholder.com/50'"></td>
-                        <td><strong>${sabor.nome}</strong></td>
-                        <td>R$ ${parseFloat(sabor.preco).toFixed(2)}</td>
-                        <td><span class="badge ${sabor.quantidade > 10 ? 'badge-success' : 'badge-warning'}">${sabor.quantidade} und</span></td>
-                        <td>${currentUser?.role === 'admin' ? `<button class="btn-danger" onclick="deleteSabor(${sabor.id})"><i class="fas fa-trash"></i> Excluir</button>` : '—'}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            } catch (error) {
-                console.error('Erro ao carregar sabores:', error);
-            }
-        }
-        
-        // Adicionar sabor
-        async function addSabor() {
-            if (currentUser?.role !== 'admin') {
-                alert('Apenas administradores podem adicionar sabores!');
-                return;
-            }
-            
-            const nome = document.getElementById('saborNome').value;
-            const preco = document.getElementById('saborPreco').value;
-            const quantidade = document.getElementById('saborQtd').value;
-            const imagem = document.getElementById('saborImagem').value;
-            
-            if (!nome || !preco || !quantidade) {
-                alert('Preencha todos os campos obrigatórios!');
-                return;
-            }
-            
-            const { error } = await supabase
-                .from('sabores')
-                .insert([{
-                    nome: nome,
-                    preco: parseFloat(preco),
-                    quantidade: parseInt(quantidade),
-                    imagem: imagem || null
-                }]);
-            
-            if (error) {
-                alert('Erro ao cadastrar sabor!');
-                return;
-            }
-            
-            alert('Sabor cadastrado com sucesso!');
-            document.getElementById('saborNome').value = '';
-            document.getElementById('saborPreco').value = '';
-            document.getElementById('saborQtd').value = '';
-            document.getElementById('saborImagem').value = '';
-            loadSabores();
-            loadDashboard();
-            loadSaboresSelect();
-        }
-        
-        // Deletar sabor
-        async function deleteSabor(id) {
-            if (currentUser?.role !== 'admin') {
-                alert('Apenas administradores podem excluir sabores!');
-                return;
-            }
-            
-            if (confirm('Tem certeza que deseja excluir este sabor?')) {
-                const { error } = await supabase
-                    .from('sabores')
-                    .delete()
-                    .eq('id', id);
-                
-                if (error) {
-                    alert('Erro ao excluir sabor!');
-                    return;
-                }
-                
-                alert('Sabor excluído com sucesso!');
-                loadSabores();
-                loadDashboard();
-                loadSaboresSelect();
-            }
-        }
+        };
         
         // Criar usuário
-        async function createUser() {
+        window.createUser = async function() {
             if (currentUser?.role !== 'admin') {
                 alert('Apenas administradores podem criar novos usuários!');
                 return;
@@ -1022,7 +863,7 @@
                 return;
             }
             
-            const createBtn = event.target;
+            const createBtn = document.getElementById('createUserBtn');
             const originalText = createBtn.innerHTML;
             createBtn.innerHTML = '<span class="loading"></span> Criando...';
             createBtn.disabled = true;
@@ -1060,10 +901,143 @@
                 createBtn.innerHTML = originalText;
                 createBtn.disabled = false;
             }
+        };
+        
+        // Dashboard
+        async function loadDashboard() {
+            try {
+                const { count: saboresCount } = await supabase
+                    .from('sabores')
+                    .select('*', { count: 'exact', head: true });
+                
+                const { count: funcionariosCount } = await supabase
+                    .from('users')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('role', 'funcionario');
+                
+                document.getElementById('totalSabores').textContent = saboresCount || 0;
+                document.getElementById('totalFuncionarios').textContent = funcionariosCount || 0;
+                
+                const hoje = new Date().toISOString().split('T')[0];
+                const { count: reservasHoje } = await supabase
+                    .from('reservas')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('data', hoje);
+                
+                document.getElementById('reservasHoje').textContent = reservasHoje || 0;
+                
+                const { data: vendas } = await supabase
+                    .from('vendas')
+                    .select('total');
+                
+                const totalVendas = vendas?.reduce((sum, item) => sum + parseFloat(item.total), 0) || 0;
+                document.getElementById('vendasMes').textContent = `R$ ${totalVendas.toFixed(2)}`;
+            } catch (error) {
+                console.error('Erro ao carregar dashboard:', error);
+            }
         }
         
+        // Sabores
+        async function loadSabores() {
+            try {
+                const { data, error } = await supabase
+                    .from('sabores')
+                    .select('*')
+                    .order('id', { ascending: true });
+                
+                if (error) throw error;
+                
+                const tbody = document.getElementById('tabelaSabores');
+                tbody.innerHTML = '';
+                
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Nenhum sabor cadastrado</td></tr>';
+                    return;
+                }
+                
+                data.forEach(sabor => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${sabor.id}</td>
+                        <td><img src="${sabor.imagem || 'https://via.placeholder.com/50'}" class="product-img" onerror="this.src='https://via.placeholder.com/50'"></td>
+                        <td><strong>${sabor.nome}</strong></td>
+                        <td>R$ ${parseFloat(sabor.preco).toFixed(2)}</td>
+                        <td><span class="badge ${sabor.quantidade > 10 ? 'badge-success' : 'badge-warning'}">${sabor.quantidade} und</span></td>
+                        <td>${currentUser?.role === 'admin' ? `<button class="btn-danger" onclick="deleteSabor(${sabor.id})"><i class="fas fa-trash"></i> Excluir</button>` : '—'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar sabores:', error);
+            }
+        }
+        
+        window.addSabor = async function() {
+            if (currentUser?.role !== 'admin') {
+                alert('Apenas administradores podem adicionar sabores!');
+                return;
+            }
+            
+            const nome = document.getElementById('saborNome').value;
+            const preco = document.getElementById('saborPreco').value;
+            const quantidade = document.getElementById('saborQtd').value;
+            const imagem = document.getElementById('saborImagem').value;
+            
+            if (!nome || !preco || !quantidade) {
+                alert('Preencha todos os campos obrigatórios!');
+                return;
+            }
+            
+            const { error } = await supabase
+                .from('sabores')
+                .insert([{
+                    nome: nome,
+                    preco: parseFloat(preco),
+                    quantidade: parseInt(quantidade),
+                    imagem: imagem || null
+                }]);
+            
+            if (error) {
+                alert('Erro ao cadastrar sabor!');
+                return;
+            }
+            
+            alert('Sabor cadastrado com sucesso!');
+            document.getElementById('saborNome').value = '';
+            document.getElementById('saborPreco').value = '';
+            document.getElementById('saborQtd').value = '';
+            document.getElementById('saborImagem').value = '';
+            loadSabores();
+            loadDashboard();
+            loadSaboresSelect();
+        };
+        
+        window.deleteSabor = async function(id) {
+            if (currentUser?.role !== 'admin') {
+                alert('Apenas administradores podem excluir sabores!');
+                return;
+            }
+            
+            if (confirm('Tem certeza que deseja excluir este sabor?')) {
+                const { error } = await supabase
+                    .from('sabores')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) {
+                    alert('Erro ao excluir sabor!');
+                    return;
+                }
+                
+                alert('Sabor excluído com sucesso!');
+                loadSabores();
+                loadDashboard();
+                loadSaboresSelect();
+            }
+        };
+        
         // Reservas
-        async function addReserva() {
+        window.addReserva = async function() {
             const data = document.getElementById('reservaData').value;
             const horario = document.getElementById('reservaHorario').value;
             const pessoas = document.getElementById('reservaPessoas').value;
@@ -1095,7 +1069,7 @@
             document.getElementById('reservaPessoas').value = '';
             loadReservas();
             loadDashboard();
-        }
+        };
         
         async function loadReservas() {
             try {
@@ -1155,7 +1129,7 @@
                 tbody.innerHTML = '';
                 
                 if (!data || data.length === 0) {
-                    tbody.innerHTML = '十大<td colspan="6" style="text-align: center;">Nenhum funcionário cadastrado</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Nenhum funcionário cadastrado</td></tr>';
                     return;
                 }
                 
@@ -1196,7 +1170,7 @@
             }
         }
         
-        function addToCart() {
+        window.addToCart = function() {
             const select = document.getElementById('carrinhoSabor');
             const saborId = select.value;
             const quantidade = parseInt(document.getElementById('carrinhoQuantidade').value);
@@ -1226,7 +1200,7 @@
             
             updateCartDisplay();
             document.getElementById('carrinhoQuantidade').value = '1';
-        }
+        };
         
         function updateCartDisplay() {
             const tbody = document.getElementById('tabelaCarrinho');
@@ -1252,12 +1226,12 @@
             document.getElementById('cartTotal').textContent = total.toFixed(2);
         }
         
-        function removeFromCart(index) {
+        window.removeFromCart = function(index) {
             cartItems.splice(index, 1);
             updateCartDisplay();
-        }
+        };
         
-        async function finalizarCompra() {
+        window.finalizarCompra = async function() {
             if (cartItems.length === 0) {
                 alert('Seu carrinho está vazio!');
                 return;
@@ -1301,10 +1275,10 @@
             loadDashboard();
             loadSabores();
             loadSaboresSelect();
-        }
+        };
         
         // UI Functions
-        function showSection(section) {
+        window.showSection = function(section) {
             document.querySelectorAll('.content-section').forEach(s => {
                 s.classList.remove('active');
             });
@@ -1317,24 +1291,24 @@
                 const target = event.target.closest('.menu-item');
                 if (target) target.classList.add('active');
             }
-        }
+        };
         
-        function openCreateUserModal() {
+        window.openCreateUserModal = function() {
             if (currentUser?.role !== 'admin') {
                 alert('Apenas administradores podem criar novos funcionários!');
                 return;
             }
             document.getElementById('createUserModal').style.display = 'flex';
-        }
+        };
         
-        function closeCreateUserModal() {
+        window.closeCreateUserModal = function() {
             document.getElementById('createUserModal').style.display = 'none';
             const alert = document.getElementById('createUserAlert');
             if (alert) {
                 alert.style.display = 'none';
                 alert.textContent = '';
             }
-        }
+        };
         
         function showAlert(alertId, message, type) {
             const alert = document.getElementById(alertId);
@@ -1348,23 +1322,33 @@
             }
         }
         
-        function logout() {
+        window.logout = function() {
             currentUser = null;
             cartItems = [];
+            localStorage.removeItem('currentUser');
             document.getElementById('appContainer').style.display = 'none';
             document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('loginUsername').value = 'joao';
             document.getElementById('loginPassword').value = 'joao123';
-        }
+        };
         
         // Inicialização
         async function init() {
             console.log('🚀 Sistema Gelato iniciado!');
-            console.log('📝 Para fazer login, use:');
-            console.log('   Usuário: joao');
-            console.log('   Senha: joao123');
+            console.log('📝 Credenciais: joao / joao123');
             
-            // Verificar se o usuário já está logado
+            // Adicionar evento de clique ao botão de login
+            const loginBtn = document.getElementById('loginButton');
+            if (loginBtn) {
+                loginBtn.onclick = window.login;
+            }
+            
+            const createUserBtn = document.getElementById('createUserBtn');
+            if (createUserBtn) {
+                createUserBtn.onclick = window.createUser;
+            }
+            
+            // Verificar se já tem sessão
             const savedUser = localStorage.getItem('currentUser');
             if (savedUser) {
                 try {
@@ -1375,7 +1359,7 @@
                     document.getElementById('userName').textContent = user.nome;
                     document.getElementById('userRoleBadge').innerHTML = `<span class="badge badge-success">${user.role === 'admin' ? 'Administrador' : 'Funcionário'}</span>`;
                     
-                    const createBtn = document.getElementById('createUserBtn');
+                    const createBtn = document.getElementById('createUserBtnAdmin');
                     if (user.role === 'admin') {
                         createBtn.style.display = 'inline-block';
                     }
@@ -1396,8 +1380,12 @@
             }
         }
         
-        // Aguardar página carregar
-        window.addEventListener('load', init);
+        // Iniciar quando a página carregar
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
     </script>
 </body>
 </html>
