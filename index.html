@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorveteria Gelato - Sistema de Gestão</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .app-container {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+            transition: all 0.3s;
+            z-index: 100;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .sidebar-header {
+            padding: 30px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .sidebar-header h2 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .sidebar-header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .menu {
+            padding: 20px;
+        }
+
+        .menu-item {
+            padding: 12px 20px;
+            margin: 8px 0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background: rgba(255,255,255,0.2);
+            transform: translateX(5px);
+        }
+
+        .menu-item i {
+            width: 24px;
+            font-size: 18px;
+        }
+
+        .logout-btn {
+            position: absolute;
+            bottom: 30px;
+            left: 20px;
+            right: 20px;
+            padding: 12px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .stat-card .value {
+            font-size: 36px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .form-card {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .form-card h3 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(250,112,154,0.4);
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 20px;
+            overflow-x: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            animation: fadeInUp 0.5s ease;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        td {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .auth-box {
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            max-width: 450px;
+            width: 100%;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .auth-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .auth-header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .auth-header p {
+            opacity: 0.9;
+        }
+
+        .auth-form {
+            padding: 40px;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .alert-error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .alert-success {
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
+
+        .content-section {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .dashboard-header {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-header h1 {
+            font-size: 28px;
+            color: #333;
+        }
+
+        .dashboard-header p {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .product-img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            animation: fadeInUp 0.3s;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-modal {
+            cursor: pointer;
+            font-size: 24px;
+            color: #999;
+        }
+
+        .close-modal:hover {
+            color: #333;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Tela de Login -->
+    <div id="loginScreen" class="auth-container">
+        <div class="auth-box">
+            <div class="auth-header">
+                <h1>🍦 Gelato</h1>
+                <p>Sistema de Gestão</p>
+            </div>
+            <div class="auth-form">
+                <div id="loginAlert" class="alert"></div>
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Usuário</label>
+                    <input type="text" id="loginUsername" placeholder="Digite seu usuário">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> Senha</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••">
+                </div>
+                <button class="btn-primary" style="width: 100%;" onclick="login()">Entrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Criação de Usuário -->
+    <div id="createUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Criar Novo Funcionário</h3>
+                <span class="close-modal" onclick="closeCreateUserModal()">&times;</span>
+            </div>
+            <div id="createUserAlert" class="alert"></div>
+            <div class="form-group">
+                <label>Nome Completo</label>
+                <input type="text" id="createUserName" placeholder="Digite o nome">
+            </div>
+            <div class="form-group">
+                <label>Usuário (Login)</label>
+                <input type="text" id="createUserUsername" placeholder="usuario">
+            </div>
+            <div class="form-group">
+                <label>Telefone</label>
+                <input type="tel" id="createUserPhone" placeholder="(11) 99999-9999">
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="createUserPassword" placeholder="••••••••">
+            </div>
+            <button class="btn-primary" style="width: 100%;" onclick="createUser()">Criar Funcionário</button>
+        </div>
+    </div>
+
+    <!-- Dashboard Principal -->
+    <div id="appContainer" class="app-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🍦 Gelato</h2>
+                <p>Painel de Controle</p>
+            </div>
+            <div class="menu">
+                <div class="menu-item active" onclick="showSection('dashboard')">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="menu-item" onclick="showSection('sabores')">
+                    <i class="fas fa-ice-cream"></i>
+                    <span>Sabores</span>
+                </div>
+                <div class="menu-item" onclick="showSection('reservas')">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Reservas</span>
+                </div>
+                <div class="menu-item" onclick="showSection('funcionarios')">
+                    <i class="fas fa-users"></i>
+                    <span>Funcionários</span>
+                </div>
+                <div class="menu-item" onclick="showSection('carrinho')">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Carrinho</span>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Sair</span>
+            </button>
+        </div>
+
+        <div class="main-content">
+            <div class="dashboard-header">
+                <h1>Bem-vindo, <span id="userName">Usuário</span>!</h1>
+                <p id="userRoleBadge"></p>
+                <button id="createUserBtn" class="btn-secondary" style="margin-top: 15px; display: none;" onclick="openCreateUserModal()">
+                    <i class="fas fa-user-plus"></i> Criar Novo Funcionário
+                </button>
+            </div>
+
+            <!-- Dashboard Section -->
+            <div id="dashboardSection" class="content-section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>🍦 Total de Sabores</h3>
+                        <div class="value" id="totalSabores">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>📅 Reservas Hoje</h3>
+                        <div class="value" id="reservasHoje">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>👥 Funcionários</h3>
+                        <div class="value" id="totalFuncionarios">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>💰 Vendas do Mês</h3>
+                        <div class="value" id="vendasMes">R$ 0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sabores Section -->
+            <div id="saboresSection" class="content-section">
+                <div class="form-card" id="saborFormCard">
+                    <h3><i class="fas fa-plus-circle"></i> Cadastrar Novo Sabor</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nome do Sabor</label>
+                            <input type="text" id="saborNome" placeholder="Ex: Chocolate Belga">
+                        </div>
+                        <div class="form-group">
+                            <label>Preço (R$)</label>
+                            <input type="number" id="saborPreco" placeholder="15.90" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label>Quantidade em Estoque</label>
+                            <input type="number" id="saborQtd" placeholder="50">
+                        </div>
+                        <div class="form-group">
+                            <label>URL da Imagem</label>
+                            <input type="text" id="saborImagem" placeholder="https://...">
+                        </div>
+                    </div>
+                    <button class="btn-primary" onclick="addSabor()">Cadastrar Sabor</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Imagem</th>
+                                <th>Nome</th>
+                                <th>Preço</th>
+                                <th>Estoque</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaSabores"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Reservas Section -->
+            <div id="reservasSection" class="content-section">
+                <div class="form-card">
+                    <h3><i class="fas fa-plus-circle"></i> Nova Reserva</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Data</label>
+                            <input type="date" id="reservaData">
+                        </div>
+                        <div class="form-group">
+                            <label>Horário</label>
+                            <input type="time" id="reservaHorario">
+                        </div>
+                        <div class="form-group">
+                            <label>Número de Pessoas</label>
+                            <input type="number" id="reservaPessoas" placeholder="2">
+                        </div>
+                    </div>
+                    <button class="btn-primary" onclick="addReserva()">Fazer Reserva</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Data</th>
+                                <th>Horário</th>
+                                <th>Pessoas</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaReservas"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Funcionários Section -->
+            <div id="funcionariosSection" class="content-section">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Usuário</th>
+                                <th>Telefone</th>
+                                <th>Data Cadastro</th>
+                                <th>Tipo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaFuncionarios"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Carrinho Section -->
+            <div id="carrinhoSection" class="content-section">
+                <div class="form-card">
+                    <h3><i class="fas fa-shopping-cart"></i> Adicionar ao Carrinho</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Selecione o Sabor</label>
+                            <select id="carrinhoSabor"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Quantidade</label>
+                            <input type="number" id="carrinhoQuantidade" placeholder="1" value="1" min="1">
+                        </div>
+                    </div>
+                    <button class="btn-primary" onclick="addToCart()">Adicionar ao Carrinho</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Produto</th>
+                                <th>Quantidade</th>
+                                <th>Preço Unit.</th>
+                                <th>Subtotal</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaCarrinho"></tbody>
+                    </table>
+                </div>
+                <div style="text-align: right; margin-top: 20px;">
+                    <h3>Total: R$ <span id="cartTotal">0.00</span></h3>
+                    <button class="btn-success" onclick="finalizarCompra()">Finalizar Compra</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://pgatmatoyhntkvvfwnus.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnYXRtYXRveWhudGt2dmZ3bnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MjE2NzksImV4cCI6MjA5MDQ5NzY3OX0.B08H_9h5xjw2ZBdAcPWxNOZrtPT23HLdz2wWmzwVDXE';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Usuário administrador padrão
+        const ADMIN_USER = {
+            username: 'joao',
+            password: 'joao123',
+            nome: 'João Victor Cezarino',
+            telefone: '(11) 99999-1111',
+            role: 'admin'
+        };
+        
+        let currentUser = null;
+        let cartItems = [];
+
+        // Inicializar banco de dados
+        async function initDatabase() {
+            console.log('🔄 Inicializando banco de dados...');
+            
+            // Criar tabela de usuários se não existir
+            const { error: createUsersError } = await supabase.rpc('create_users_table_if_not_exists');
+            if (createUsersError) {
+                console.log('Tabela users pode já existir ou erro:', createUsersError);
+            }
+            
+            // Verificar se admin já existe
+            const { data: existingAdmin } = await supabase
+                .from('users')
+                .select('*')
+                .eq('username', ADMIN_USER.username)
+                .single();
+            
+            if (!existingAdmin) {
+                // Criar admin
+                const { error: insertError } = await supabase
+                    .from('users')
+                    .insert([{
+                        username: ADMIN_USER.username,
+                        password: ADMIN_USER.password,
+                        nome: ADMIN_USER.nome,
+                        telefone: ADMIN_USER.telefone,
+                        role: ADMIN_USER.role
+                    }]);
+                
+                if (insertError) {
+                    console.error('Erro ao criar admin:', insertError);
+                } else {
+                    console.log('✅ Administrador criado com sucesso!');
+                    console.log('👤 Usuário:', ADMIN_USER.username);
+                    console.log('🔑 Senha:', ADMIN_USER.password);
+                }
+            } else {
+                console.log('✅ Administrador já existe');
+            }
+            
+            // Criar tabela de sabores
+            const { error: createSaboresError } = await supabase.rpc('create_sabores_table_if_not_exists');
+            if (createSaboresError) {
+                console.log('Tabela sabores pode já existir');
+            }
+            
+            // Criar tabela de reservas
+            const { error: createReservasError } = await supabase.rpc('create_reservas_table_if_not_exists');
+            if (createReservasError) {
+                console.log('Tabela reservas pode já existir');
+            }
+            
+            // Criar tabela de vendas
+            const { error: createVendasError } = await supabase.rpc('create_vendas_table_if_not_exists');
+            if (createVendasError) {
+                console.log('Tabela vendas pode já existir');
+            }
+        }
+
+        // Função de Login
+        async function login() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!username || !password) {
+                showAlert('loginAlert', 'Preencha todos os campos!', 'error');
+                return;
+            }
+
+            const loginBtn = event.target;
+            const originalText = loginBtn.innerHTML;
+            loginBtn.innerHTML = '<span class="loading"></span> Entrando...';
+            loginBtn.disabled = true;
+
+            try {
+                // Buscar usuário no banco
+                const { data: users, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('username', username.toLowerCase())
+                    .eq('password', password);
+
+                if (error) throw error;
+
+                if (!users || users.length === 0) {
+                    showAlert('loginAlert', 'Usuário ou senha inválidos!', 'error');
+                    loginBtn.innerHTML = originalText;
+                    loginBtn.disabled = false;
+                    return;
+                }
+
+                const user = users[0];
+                currentUser = user;
+
+                // Mostrar dashboard
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+                document.getElementById('userName').textContent = user.nome;
+                document.getElementById('userRoleBadge').innerHTML = `<span class="badge badge-success">${user.role === 'admin' ? 'Administrador' : 'Funcionário'}</span>`;
+                
+                // Mostrar botão de criar funcionário apenas para admin
+                const createBtn = document.getElementById('createUserBtn');
+                if (user.role === 'admin') {
+                    createBtn.style.display = 'inline-block';
+                } else {
+                    createBtn.style.display = 'none';
+                }
+                
+                // Esconder formulário de cadastro de sabores para não-admin
+                const saborForm = document.getElementById('saborFormCard');
+                if (user.role !== 'admin' && saborForm) {
+                    saborForm.style.display = 'none';
+                }
+                
+                // Carregar dados
+                await loadDashboard();
+                await loadSabores();
+                await loadReservas();
+                await loadFuncionarios();
+                await loadSaboresSelect();
+                
+            } catch (error) {
+                console.error('Erro no login:', error);
+                showAlert('loginAlert', 'Erro ao fazer login!', 'error');
+            } finally {
+                loginBtn.innerHTML = originalText;
+                loginBtn.disabled = false;
+            }
+        }
+
+        // Criar novo usuário
+        async function createUser() {
+            if (currentUser?.role !== 'admin') {
+                alert('Apenas administradores podem criar novos usuários!');
+                return;
+            }
+
+            const nome = document.getElementById('createUserName').value.trim();
+            const username = document.getElementById('createUserUsername').value.trim().toLowerCase();
+            const telefone = document.getElementById('createUserPhone').value;
+            const password = document.getElementById('createUserPassword').value;
+
+            if (!nome || !username || !password) {
+                showAlert('createUserAlert', 'Preencha todos os campos obrigatórios!', 'error');
+                return;
+            }
+
+            if (password.length < 4) {
+                showAlert('createUserAlert', 'A senha deve ter no mínimo 4 caracteres!', 'error');
+                return;
+            }
+
+            const createBtn = event.target;
+            const originalText = createBtn.innerHTML;
+            createBtn.innerHTML = '<span class="loading"></span> Criando...';
+            createBtn.disabled = true;
+
+            try {
+                // Verificar se usuário já existe
+                const { data: existing } = await supabase
+                    .from('users')
+                    .select('username')
+                    .eq('username', username)
+                    .single();
+
+                if (existing) {
+                    showAlert('createUserAlert', 'Este usuário já existe!', 'error');
+                    createBtn.innerHTML = originalText;
+                    createBtn.disabled = false;
+                    return;
+                }
+
+                // Criar novo usuário
+                const { error: insertError } = await supabase
+                    .from('users')
+                    .insert([{
+                        username: username,
+                        password: password,
+                        nome: nome,
+                        telefone: telefone || '',
+                        role: 'funcionario'
+                    }]);
+
+                if (insertError) throw insertError;
+
+                showAlert('createUserAlert', 'Funcionário criado com sucesso!', 'success');
+                
+                // Limpar campos
+                document.getElementById('createUserName').value = '';
+                document.getElementById('createUserUsername').value = '';
+                document.getElementById('createUserPhone').value = '';
+                document.getElementById('createUserPassword').value = '';
+                
+                setTimeout(() => {
+                    closeCreateUserModal();
+                    loadFuncionarios();
+                    loadDashboard();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Erro ao criar usuário:', error);
+                showAlert('createUserAlert', 'Erro ao criar funcionário!', 'error');
+            } finally {
+                createBtn.innerHTML = originalText;
+                createBtn.disabled = false;
+            }
+        }
+
+        // Dashboard
+        async function loadDashboard() {
+            try {
+                const { count: saboresCount } = await supabase
+                    .from('sabores')
+                    .select('*', { count: 'exact', head: true });
+                
+                const { count: funcionariosCount } = await supabase
+                    .from('users')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('role', 'funcionario');
+                
+                document.getElementById('totalSabores').textContent = saboresCount || 0;
+                document.getElementById('totalFuncionarios').textContent = funcionariosCount || 0;
+                
+                const hoje = new Date().toISOString().split('T')[0];
+                const { count: reservasHoje } = await supabase
+                    .from('reservas')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('data', hoje);
+                
+                document.getElementById('reservasHoje').textContent = reservasHoje || 0;
+                
+                const { data: vendas } = await supabase
+                    .from('vendas')
+                    .select('total');
+                
+                const totalVendas = vendas?.reduce((sum, item) => sum + parseFloat(item.total), 0) || 0;
+                document.getElementById('vendasMes').textContent = `R$ ${totalVendas.toFixed(2)}`;
+            } catch (error) {
+                console.error('Erro ao carregar dashboard:', error);
+            }
+        }
+
+        // Sabores
+        async function loadSabores() {
+            try {
+                const { data, error } = await supabase
+                    .from('sabores')
+                    .select('*')
+                    .order('id', { ascending: true });
+                
+                if (error) throw error;
+                
+                const tbody = document.getElementById('tabelaSabores');
+                tbody.innerHTML = '';
+                
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Nenhum sabor cadastrado</td></tr>';
+                    return;
+                }
+                
+                data.forEach(sabor => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${sabor.id}</td>
+                        <td><img src="${sabor.imagem || 'https://via.placeholder.com/50'}" class="product-img" onerror="this.src='https://via.placeholder.com/50'"></td>
+                        <td><strong>${sabor.nome}</strong></td>
+                        <td>R$ ${parseFloat(sabor.preco).toFixed(2)}</td>
+                        <td><span class="badge ${sabor.quantidade > 10 ? 'badge-success' : 'badge-warning'}">${sabor.quantidade} und</span></td>
+                        <td>${currentUser?.role === 'admin' ? `<button class="btn-danger" onclick="deleteSabor(${sabor.id})"><i class="fas fa-trash"></i> Excluir</button>` : '—'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar sabores:', error);
+            }
+        }
+
+        async function addSabor() {
+            if (currentUser?.role !== 'admin') {
+                alert('Apenas administradores podem adicionar sabores!');
+                return;
+            }
+            
+            const nome = document.getElementById('saborNome').value;
+            const preco = document.getElementById('saborPreco').value;
+            const quantidade = document.getElementById('saborQtd').value;
+            const imagem = document.getElementById('saborImagem').value;
+            
+            if (!nome || !preco || !quantidade) {
+                alert('Preencha todos os campos obrigatórios!');
+                return;
+            }
+            
+            const { error } = await supabase
+                .from('sabores')
+                .insert([{
+                    nome: nome,
+                    preco: parseFloat(preco),
+                    quantidade: parseInt(quantidade),
+                    imagem: imagem || null
+                }]);
+            
+            if (error) {
+                alert('Erro ao cadastrar sabor!');
+                return;
+            }
+            
+            alert('Sabor cadastrado com sucesso!');
+            document.getElementById('saborNome').value = '';
+            document.getElementById('saborPreco').value = '';
+            document.getElementById('saborQtd').value = '';
+            document.getElementById('saborImagem').value = '';
+            loadSabores();
+            loadDashboard();
+            loadSaboresSelect();
+        }
+
+        async function deleteSabor(id) {
+            if (currentUser?.role !== 'admin') {
+                alert('Apenas administradores podem excluir sabores!');
+                return;
+            }
+            
+            if (confirm('Tem certeza que deseja excluir este sabor?')) {
+                const { error } = await supabase
+                    .from('sabores')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) {
+                    alert('Erro ao excluir sabor!');
+                    return;
+                }
+                
+                alert('Sabor excluído com sucesso!');
+                loadSabores();
+                loadDashboard();
+                loadSaboresSelect();
+            }
+        }
+
+        // Reservas
+        async function addReserva() {
+            const data = document.getElementById('reservaData').value;
+            const horario = document.getElementById('reservaHorario').value;
+            const pessoas = document.getElementById('reservaPessoas').value;
+            
+            if (!data || !horario || !pessoas) {
+                alert('Preencha todos os campos!');
+                return;
+            }
+            
+            const { error } = await supabase
+                .from('reservas')
+                .insert([{
+                    user_id: currentUser.id,
+                    user_name: currentUser.nome,
+                    data: data,
+                    horario: horario,
+                    pessoas: parseInt(pessoas),
+                    status: 'pendente'
+                }]);
+            
+            if (error) {
+                alert('Erro ao fazer reserva!');
+                return;
+            }
+            
+            alert('Reserva realizada com sucesso!');
+            document.getElementById('reservaData').value = '';
+            document.getElementById('reservaHorario').value = '';
+            document.getElementById('reservaPessoas').value = '';
+            loadReservas();
+            loadDashboard();
+        }
+
+        async function loadReservas() {
+            try {
+                let query = supabase.from('reservas').select('*');
+                
+                if (currentUser?.role !== 'admin') {
+                    query = query.eq('user_id', currentUser.id);
+                }
+                
+                const { data, error } = await query.order('data', { ascending: false });
+                
+                if (error) throw error;
+                
+                const tbody = document.getElementById('tabelaReservas');
+                tbody.innerHTML = '';
+                
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '十大<td colspan="5" style="text-align: center;">Nenhuma reserva encontrada</td> </tr>';
+                    return;
+                }
+                
+                data.forEach(reserva => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${reserva.id}</td>
+                        <td>${new Date(reserva.data).toLocaleDateString('pt-BR')}</td>
+                        <td>${reserva.horario}</td>
+                        <td>${reserva.pessoas}</td>
+                        <td><span class="badge ${reserva.status === 'confirmada' ? 'badge-success' : 'badge-warning'}">${reserva.status}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar reservas:', error);
+            }
+        }
+
+        // Funcionários
+        async function loadFuncionarios() {
+            if (currentUser?.role !== 'admin') {
+                document.getElementById('funcionariosSection').innerHTML = '<div class="table-container"><p style="padding: 20px; text-align: center;">Apenas administradores podem ver a lista de funcionários.</p></div>';
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                const tbody = document.getElementById('tabelaFuncionarios');
+                tbody.innerHTML = '';
+                
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '十大<td colspan="6" style="text-align: center;">Nenhum funcionário cadastrado</td> </tr>';
+                    return;
+                }
+                
+                data.forEach(user => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${user.id}</td>
+                        <td><strong>${user.nome}</strong></td>
+                        <td>${user.username}</td>
+                        <td>${user.telefone || 'N/A'}</td>
+                        <td>${new Date(user.created_at).toLocaleDateString('pt-BR')}</td>
+                        <td><span class="badge ${user.role === 'admin' ? 'badge-success' : 'badge-info'}">${user.role === 'admin' ? 'Admin' : 'Funcionário'}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar funcionários:', error);
+            }
+        }
+
+        // Carrinho
+        async function loadSaboresSelect() {
+            try {
+                const { data } = await supabase
+                    .from('sabores')
+                    .select('id, nome, preco, quantidade')
+                    .gt('quantidade', 0);
+                
+                const select = document.getElementById('carrinhoSabor');
+                if (select) {
+                    select.innerHTML = '<option value="">Selecione um sabor</option>';
+                    data?.forEach(sabor => {
+                        select.innerHTML += `<option value="${sabor.id}" data-preco="${sabor.preco}" data-nome="${sabor.nome}">${sabor.nome} - R$ ${sabor.preco.toFixed(2)} (${sabor.quantidade} und)</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao carregar sabores:', error);
+            }
+        }
+
+        function addToCart() {
+            const select = document.getElementById('carrinhoSabor');
+            const saborId = select.value;
+            const quantidade = parseInt(document.getElementById('carrinhoQuantidade').value);
+            
+            if (!saborId) {
+                alert('Selecione um sabor!');
+                return;
+            }
+            
+            const selectedOption = select.options[select.selectedIndex];
+            const nome = selectedOption.getAttribute('data-nome');
+            const preco = parseFloat(selectedOption.getAttribute('data-preco'));
+            
+            const existingItem = cartItems.find(item => item.saborId == saborId);
+            if (existingItem) {
+                existingItem.quantidade += quantidade;
+                existingItem.subtotal = existingItem.quantidade * existingItem.preco;
+            } else {
+                cartItems.push({
+                    saborId: saborId,
+                    nome: nome,
+                    preco: preco,
+                    quantidade: quantidade,
+                    subtotal: preco * quantidade
+                });
+            }
+            
+            updateCartDisplay();
+            document.getElementById('carrinhoQuantidade').value = '1';
+        }
+
+        function updateCartDisplay() {
+            const tbody = document.getElementById('tabelaCarrinho');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            let total = 0;
+            cartItems.forEach((item, index) => {
+                total += item.subtotal;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${item.nome}</td>
+                    <td>${item.quantidade}</td>
+                    <td>R$ ${item.preco.toFixed(2)}</td>
+                    <td>R$ ${item.subtotal.toFixed(2)}</td>
+                    <td><button class="btn-danger" onclick="removeFromCart(${index})"><i class="fas fa-trash"></i></button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('cartTotal').textContent = total.toFixed(2);
+        }
+
+        function removeFromCart(index) {
+            cartItems.splice(index, 1);
+            updateCartDisplay();
+        }
+
+        async function finalizarCompra() {
+            if (cartItems.length === 0) {
+                alert('Seu carrinho está vazio!');
+                return;
+            }
+            
+            // Atualizar estoque
+            for (const item of cartItems) {
+                const { data: sabor } = await supabase
+                    .from('sabores')
+                    .select('quantidade')
+                    .eq('id', item.saborId)
+                    .single();
+                
+                if (sabor && sabor.quantidade >= item.quantidade) {
+                    await supabase
+                        .from('sabores')
+                        .update({ quantidade: sabor.quantidade - item.quantidade })
+                        .eq('id', item.saborId);
+                }
+            }
+            
+            const total = cartItems.reduce((sum, item) => sum + item.subtotal, 0);
+            
+            const { error } = await supabase
+                .from('vendas')
+                .insert([{
+                    user_id: currentUser.id,
+                    user_name: currentUser.nome,
+                    produtos: cartItems,
+                    total: total,
+                    status: 'finalizado'
+                }]);
+            
+            if (error) {
+                alert('Erro ao finalizar compra!');
+                return;
+            }
+            
+            alert('Compra finalizada com sucesso!');
+            cartItems = [];
+            updateCartDisplay();
+            loadDashboard();
+            loadSabores();
+            loadSaboresSelect();
+        }
+
+        // UI Functions
+        function showSection(section) {
+            document.querySelectorAll('.content-section').forEach(s => {
+                s.classList.remove('active');
+            });
+            document.getElementById(section + 'Section').classList.add('active');
+            
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            if (event && event.target) {
+                const target = event.target.closest('.menu-item');
+                if (target) target.classList.add('active');
+            }
+        }
+
+        function openCreateUserModal() {
+            if (currentUser?.role !== 'admin') {
+                alert('Apenas administradores podem criar novos funcionários!');
+                return;
+            }
+            document.getElementById('createUserModal').style.display = 'flex';
+        }
+
+        function closeCreateUserModal() {
+            document.getElementById('createUserModal').style.display = 'none';
+            const alert = document.getElementById('createUserAlert');
+            alert.style.display = 'none';
+            alert.textContent = '';
+        }
+
+        function showAlert(alertId, message, type) {
+            const alert = document.getElementById(alertId);
+            alert.textContent = message;
+            alert.className = `alert alert-${type}`;
+            alert.style.display = 'block';
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000);
+        }
+
+        function logout() {
+            currentUser = null;
+            cartItems = [];
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+        }
+
+        // Inicialização
+        async function init() {
+            console.log('🚀 Inicializando sistema Gelato...');
+            await initDatabase();
+            console.log('✅ Sistema pronto!');
+            console.log('👤 Login: joao | Senha: joao123');
+        }
+
+        init();
+    </script>
+</body>
+</html>
